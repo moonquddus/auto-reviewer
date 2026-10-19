@@ -1,0 +1,24 @@
+# Copy to config.yaml and edit.
+
+# true: log the review that would be posted, post nothing.
+dry_run: true
+
+# Only review PRs by these authors. Leave both empty to review PRs by any author.
+allow:
+  authors: []          # e.g. [alice, bob]
+  teams: []            # e.g. [my-org/backend]
+
+max_diff_bytes: 200000
+
+# How Claude must review. Paths are relative to this repo, or absolute.
+review_guide: review-guide.md
+repo_guides: {}        # e.g. {my-org/api: guides/api.md}
+
+claude:
+  # login: use the account from `claude /login`.
+  # token: use a `claude setup-token` token stored in the macOS Keychain:
+  #   security add-generic-password -a "$USER" -s auto-reviewer-claude-token -w <token>
+  auth: login
+  token_keychain_service: auto-reviewer-claude-token
+  model: sonnet
+  timeout_seconds: 600

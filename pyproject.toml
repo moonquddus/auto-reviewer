@@ -1,0 +1,21 @@
+[project]
+name = "auto-reviewer"
+version = "0.1.0"
+description = "Review GitHub PRs assigned to you with Claude Code headless"
+readme = "README.md"
+authors = [
+    { name = "Moon Quddus", email = "moonquddus@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
