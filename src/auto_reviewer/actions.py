@@ -1,14 +1,13 @@
 from auto_reviewer.reviewer import Review
 
-EVENTS = {"accept": "APPROVE", "comment": "COMMENT", "needs_changes": "REQUEST_CHANGES"}
+EVENTS = {"accept": "APPROVE", "needs_changes": "REQUEST_CHANGES"}
 
 
 def settle(review: Review, commentable: set[tuple[str, int]]) -> Review | None:
-    verdict = "comment" if review.verdict == "accept" and review.comments else review.verdict
     comments = [c for c in review.comments if (c.path, c.line) in commentable]
-    if verdict != "accept" and not comments:
+    if review.verdict == "needs_changes" and not comments:
         return None
-    return Review(verdict, comments)
+    return Review(review.verdict, comments)
 
 
 def payload(review: Review, sha: str) -> dict:

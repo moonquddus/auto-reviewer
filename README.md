@@ -2,8 +2,8 @@
 
 Reviews GitHub PRs that request a review from you or your team, with Claude Code in headless mode (`claude -p`).
 
-- **accept**: approves the PR. No body, no comments.
-- **comment** / **needs_changes**: posts one review with inline code comments only.
+- **accept**: approves the PR. It can add non-blocking inline comments.
+- **needs_changes**: requests changes, with inline comments. At least one comment is blocking.
 
 It also reviews new commits on PRs that you reviewed before. It skips draft PRs and approved PRs. When `check_ci: true`, it skips PRs with failed CI, and waits for pending CI. It does not review your own PRs, and it reviews each head commit one time only.
 

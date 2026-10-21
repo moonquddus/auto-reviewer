@@ -57,13 +57,22 @@ def test_accept_without_comments_approves_empty():
     assert actions.payload(result, "sha") == {"commit_id": "sha", "event": "APPROVE"}
 
 
-def test_accept_with_comments_downgrades():
+def test_accept_with_comments_approves_with_comments():
     result = actions.settle(Review("accept", [Comment("app.py", 2, "hm")]), LINES)
-    assert result.verdict == "comment"
+    assert actions.payload(result, "sha") == {
+        "commit_id": "sha",
+        "event": "APPROVE",
+        "comments": [{"path": "app.py", "line": 2, "side": "RIGHT", "body": "hm"}],
+    }
 
 
-def test_accept_with_only_invalid_comments_posts_nothing():
-    assert actions.settle(Review("accept", [Comment("app.py", 99, "hm")]), LINES) is None
+def test_accept_with_only_invalid_comments_approves_empty():
+    result = actions.settle(Review("accept", [Comment("app.py", 99, "hm")]), LINES)
+    assert actions.payload(result, "sha") == {"commit_id": "sha", "event": "APPROVE"}
+
+
+def test_needs_changes_with_only_invalid_comments_posts_nothing():
+    assert actions.settle(Review("needs_changes", [Comment("app.py", 99, "hm")]), LINES) is None
 
 
 def test_invalid_comments_dropped():
@@ -76,9 +85,9 @@ def test_invalid_comments_dropped():
 
 
 def test_parse_ok():
-    out = json.dumps({"is_error": False, "structured_output": {"verdict": "comment", "comments": [
+    out = json.dumps({"is_error": False, "structured_output": {"verdict": "accept", "comments": [
         {"path": "a.py", "line": 3, "body": "b"}]}})
-    assert parse(out) == Review("comment", [Comment("a.py", 3, "b")])
+    assert parse(out) == Review("accept", [Comment("a.py", 3, "b")])
 
 
 @pytest.mark.parametrize("out", ["not json", json.dumps({"is_error": True, "result": "Not logged in"})])
