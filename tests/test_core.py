@@ -86,8 +86,12 @@ def test_invalid_comments_dropped():
 
 def test_parse_ok():
     out = json.dumps({"is_error": False, "structured_output": {"verdict": "accept", "comments": [
-        {"path": "a.py", "line": 3, "body": "b"}]}})
-    assert parse(out) == Review("accept", [Comment("a.py", 3, "b")])
+        {"path": "a.py", "line": 3, "label": "nitpick", "blocking": False, "subject": "Rename x.", "discussion": "Too short."},
+        {"path": "a.py", "line": 4, "label": "issue", "blocking": True, "subject": "Off by one.", "discussion": " "}]}})
+    assert parse(out) == Review("accept", [
+        Comment("a.py", 3, "**nitpick (non-blocking):** Rename x.\n\nToo short."),
+        Comment("a.py", 4, "**issue (blocking):** Off by one."),
+    ])
 
 
 @pytest.mark.parametrize("out", ["not json", json.dumps({"is_error": True, "result": "Not logged in"})])

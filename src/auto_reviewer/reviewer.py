@@ -8,6 +8,7 @@ from typing import Literal
 from auto_reviewer.config import ClaudeConfig
 
 Verdict = Literal["accept", "needs_changes"]
+LABELS = ["issue", "suggestion", "todo", "question", "thought", "nitpick", "chore", "note"]
 
 SCHEMA = {
     "type": "object",
@@ -20,9 +21,12 @@ SCHEMA = {
                 "properties": {
                     "path": {"type": "string"},
                     "line": {"type": "integer"},
-                    "body": {"type": "string"},
+                    "label": {"type": "string", "enum": LABELS},
+                    "blocking": {"type": "boolean"},
+                    "subject": {"type": "string"},
+                    "discussion": {"type": "string"},
                 },
-                "required": ["path", "line", "body"],
+                "required": ["path", "line", "label", "blocking", "subject", "discussion"],
             },
         },
     },
@@ -39,6 +43,9 @@ TOOL_RULES = """
 - Every piece of feedback must be an inline comment on a changed line. There is no review summary.
 - "path" is the file path as shown after "+++ b/" in the diff.
 - "line" is the line number in the new version of the file. It must be an added ("+") or context (" ") line inside a diff hunk.
+- Each comment is a Conventional Comment (https://conventionalcomments.org/). The tool writes it as "**label (blocking|non-blocking):** subject", then the discussion.
+- "subject" is one short sentence. "discussion" holds the reason and any ```suggestion block, or is empty.
+- verdict "accept" must have no blocking comments. verdict "needs_changes" must have at least one.
 """
 
 
@@ -75,6 +82,13 @@ def build_prompt(title: str, body: str, diff: str) -> str:
     return f"<pr_title>\n{title}\n</pr_title>\n\n<pr_description>\n{body}\n</pr_description>\n\n<diff>\n{diff}\n</diff>\n"
 
 
+def conventional(c: dict) -> str:
+    decoration = "blocking" if c["blocking"] else "non-blocking"
+    head = f"**{c['label']} ({decoration}):** {c['subject'].strip()}"
+    discussion = c["discussion"].strip()
+    return f"{head}\n\n{discussion}" if discussion else head
+
+
 def parse(stdout: str) -> Review:
     try:
         result = json.loads(stdout)
@@ -83,7 +97,7 @@ def parse(stdout: str) -> Review:
     output = result.get("structured_output")
     if result.get("is_error") or not isinstance(output, dict):
         raise ReviewError(f"claude failed: {result.get('result') or result.get('subtype')}")
-    return Review(output["verdict"], [Comment(c["path"], int(c["line"]), c["body"]) for c in output["comments"]])
+    return Review(output["verdict"], [Comment(c["path"], int(c["line"]), conventional(c)) for c in output["comments"]])
 
 
 def review(cfg: ClaudeConfig, guide: str, prompt: str) -> Review:
