@@ -49,6 +49,12 @@ def diff(pr: PullRequest) -> str:
     return _gh("pr", "diff", str(pr.number), "--repo", pr.repo)
 
 
+def review_comments(pr: PullRequest) -> list[dict]:
+    out = _gh("api", "--paginate", f"repos/{pr.repo}/pulls/{pr.number}/comments", "--jq",
+              ".[] | {id, path, line: (.line // .original_line), body, user: .user.login, reply_to: .in_reply_to_id}")
+    return [json.loads(row) for row in out.splitlines() if row]
+
+
 def post_review(pr: PullRequest, payload: dict) -> None:
     _gh("api", "--method", "POST", f"repos/{pr.repo}/pulls/{pr.number}/reviews", "--input", "-",
         stdin=json.dumps(payload))

@@ -3,8 +3,14 @@ from auto_reviewer.reviewer import Review
 EVENTS = {"accept": "APPROVE", "needs_changes": "REQUEST_CHANGES"}
 
 
-def settle(review: Review, commentable: set[tuple[str, int]]) -> Review | None:
-    comments = [c for c in review.comments if (c.path, c.line) in commentable]
+def _head(path: str, body: str) -> tuple[str, str]:
+    return path, body.strip().split("\n", 1)[0].lower()
+
+
+def settle(review: Review, commentable: set[tuple[str, int]], earlier: list[dict] = ()) -> Review | None:
+    posted = {_head(c["path"], c["body"]) for c in earlier}
+    comments = [c for c in review.comments
+                if (c.path, c.line) in commentable and _head(c.path, c.body) not in posted]
     if review.verdict == "needs_changes" and not comments:
         return None
     return Review(review.verdict, comments)

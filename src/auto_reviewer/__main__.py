@@ -7,7 +7,7 @@ from pathlib import Path
 
 from auto_reviewer import actions, config, gates, github
 from auto_reviewer.diff import commentable_lines
-from auto_reviewer.reviewer import ReviewError, build_prompt, review
+from auto_reviewer.reviewer import ReviewError, build_prompt, earlier_threads, review
 from auto_reviewer.state import DRY_RUN_STATE, STATE, Seen
 
 LOG = Path.home() / "Library/Logs/auto-reviewer.log"
@@ -20,7 +20,7 @@ def allowed(cfg: config.Config, author: str) -> bool:
     return author in cfg.authors or any(author in github.team_members(t) for t in cfg.teams)
 
 
-def process(cfg: config.Config, seen: Seen, pr: github.PullRequest) -> None:
+def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> None:
     info = github.details(pr)
     key = Seen.key(pr.repo, pr.number, info["headRefOid"])
     if key in seen:
@@ -30,10 +30,12 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest) -> None:
         return
 
     diff = github.diff(pr)
-    prompt = build_prompt(pr.title, info.get("body") or "", diff[: cfg.max_diff_bytes])
-    result = actions.settle(review(cfg.claude, cfg.guide_for(pr.repo), prompt), commentable_lines(diff))
+    comments = github.review_comments(pr)
+    mine = [c for c in comments if c["user"] == me]
+    prompt = build_prompt(pr.title, info.get("body") or "", diff[: cfg.max_diff_bytes], earlier_threads(comments, me))
+    result = actions.settle(review(cfg.claude, cfg.guide_for(pr.repo), prompt), commentable_lines(diff), mine)
     if result is None:
-        log.info("%s: no valid inline comments, nothing posted", pr.url)
+        log.info("%s: no new valid inline comments, nothing posted", pr.url)
         seen.add(key)
         return
 
@@ -67,7 +69,7 @@ def main() -> None:
         if pr.author == me or not allowed(cfg, pr.author):
             continue
         try:
-            process(cfg, seen, pr)
+            process(cfg, seen, pr, me)
         except (ReviewError, subprocess.SubprocessError) as e:
             stderr = getattr(e, "stderr", "") or ""
             log.error("%s: %s %s", pr.url, e, stderr.strip())

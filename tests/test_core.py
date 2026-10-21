@@ -5,7 +5,7 @@ import pytest
 
 from auto_reviewer import actions, gates
 from auto_reviewer.diff import commentable_lines
-from auto_reviewer.reviewer import Comment, Review, ReviewError, parse
+from auto_reviewer.reviewer import Comment, Review, ReviewError, earlier_threads, parse
 from auto_reviewer.state import Seen
 
 DIFF = """diff --git a/app.py b/app.py
@@ -82,6 +82,27 @@ def test_invalid_comments_dropped():
         "event": "REQUEST_CHANGES",
         "comments": [{"path": "app.py", "line": 2, "side": "RIGHT", "body": "a"}],
     }
+
+
+def test_duplicate_of_earlier_comment_dropped():
+    earlier = [{"path": "app.py", "body": "**issue (blocking):** Off by one.\n\nOld wording."}]
+    review = Review("needs_changes", [Comment("app.py", 2, "**Issue (blocking):** Off by one.\n\nNew wording.")])
+    assert actions.settle(review, LINES, earlier) is None
+
+
+def test_new_comment_kept_next_to_earlier():
+    earlier = [{"path": "app.py", "body": "**issue (blocking):** Off by one."}]
+    review = Review("needs_changes", [Comment("app.py", 2, "**issue (blocking):** Null check missing.")])
+    assert actions.settle(review, LINES, earlier).comments == review.comments
+
+
+def test_earlier_threads():
+    comments = [
+        {"id": 1, "path": "a.py", "line": 3, "body": "**issue (blocking):** X.", "user": "me", "reply_to": None},
+        {"id": 2, "path": "a.py", "line": 3, "body": "Fixed.", "user": "dev", "reply_to": 1},
+        {"id": 3, "path": "b.py", "line": 1, "body": "Human note.", "user": "dev", "reply_to": None},
+    ]
+    assert earlier_threads(comments, "me") == "a.py:3\n**issue (blocking):** X.\nReply from dev: Fixed."
 
 
 def test_parse_ok():
