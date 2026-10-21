@@ -25,13 +25,8 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest) -> None:
     key = Seen.key(pr.repo, pr.number, info["headRefOid"])
     if key in seen:
         return
-    gate, reason = gates.evaluate(info)
-    if gate is gates.Gate.PENDING:
-        log.info("%s: %s, retry later", pr.url, reason)
-        return
-    if gate is gates.Gate.BLOCKED:
-        log.info("%s: skipped, %s", pr.url, reason)
-        seen.add(key)
+    if reason := gates.blocker(info, cfg.check_ci):
+        log.debug("%s: skipped, %s", pr.url, reason)
         return
 
     diff = github.diff(pr)
@@ -68,7 +63,7 @@ def main() -> None:
 
     me = github.viewer()
     seen = Seen(DRY_RUN_STATE if cfg.dry_run else STATE)
-    for pr in github.assigned_prs():
+    for pr in github.review_prs():
         if pr.author == me or not allowed(cfg, pr.author):
             continue
         try:

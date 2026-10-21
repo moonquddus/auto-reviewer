@@ -21,11 +21,17 @@ def viewer() -> str:
     return _gh("api", "user", "--jq", ".login").strip()
 
 
-def assigned_prs() -> list[PullRequest]:
-    rows = json.loads(_gh("search", "prs", "--assignee=@me", "--state=open", "--limit", "100",
+def _search(*filters: str) -> list[PullRequest]:
+    rows = json.loads(_gh("search", "prs", *filters, "--state=open", "--limit", "100",
                           "--json", "repository,number,title,author,url"))
     return [PullRequest(r["repository"]["nameWithOwner"], r["number"], r["title"], r["author"]["login"], r["url"])
             for r in rows]
+
+
+def review_prs() -> list[PullRequest]:
+    # A submitted review removes the request, so also search reviewed-by to catch later pushes.
+    prs = _search("--review-requested=@me") + _search("--reviewed-by=@me")
+    return list({pr.url: pr for pr in prs}.values())
 
 
 @cache
@@ -36,7 +42,7 @@ def team_members(team: str) -> frozenset[str]:
 
 def details(pr: PullRequest) -> dict:
     return json.loads(_gh("pr", "view", str(pr.number), "--repo", pr.repo,
-                          "--json", "headRefOid,isDraft,statusCheckRollup,body"))
+                          "--json", "headRefOid,isDraft,statusCheckRollup,body,reviewDecision,latestReviews"))
 
 
 def diff(pr: PullRequest) -> str:

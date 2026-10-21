@@ -31,16 +31,22 @@ def test_commentable_lines():
     assert commentable_lines(DIFF) == {("app.py", 1), ("app.py", 2), ("app.py", 3), ("app.py", 4)}
 
 
-@pytest.mark.parametrize("info, gate", [
-    ({"isDraft": True, "statusCheckRollup": []}, gates.Gate.BLOCKED),
-    ({"isDraft": False, "statusCheckRollup": [{"conclusion": "FAILURE"}]}, gates.Gate.BLOCKED),
-    ({"isDraft": False, "statusCheckRollup": [{"status": "IN_PROGRESS", "conclusion": ""}]}, gates.Gate.PENDING),
-    ({"isDraft": False, "statusCheckRollup": [{"state": "PENDING"}]}, gates.Gate.PENDING),
-    ({"isDraft": False, "statusCheckRollup": [{"conclusion": "SUCCESS"}, {"state": "SUCCESS"}]}, gates.Gate.OPEN),
-    ({"isDraft": False, "statusCheckRollup": []}, gates.Gate.OPEN),
+@pytest.mark.parametrize("info, reason", [
+    ({"isDraft": True, "statusCheckRollup": []}, "draft"),
+    ({"isDraft": False, "reviewDecision": "APPROVED"}, "approved"),
+    ({"isDraft": False, "latestReviews": [{"state": "COMMENTED"}, {"state": "APPROVED"}]}, "approved"),
+    ({"isDraft": False, "statusCheckRollup": [{"conclusion": "FAILURE"}]}, "CI failed"),
+    ({"isDraft": False, "statusCheckRollup": [{"status": "IN_PROGRESS", "conclusion": ""}]}, "CI pending"),
+    ({"isDraft": False, "statusCheckRollup": [{"state": "PENDING"}]}, "CI pending"),
+    ({"isDraft": False, "statusCheckRollup": [{"conclusion": "SUCCESS"}, {"state": "SUCCESS"}]}, None),
+    ({"isDraft": False, "statusCheckRollup": [], "latestReviews": [{"state": "CHANGES_REQUESTED"}]}, None),
 ])
-def test_gates(info, gate):
-    assert gates.evaluate(info)[0] is gate
+def test_blocker(info, reason):
+    assert gates.blocker(info) == reason
+
+
+def test_blocker_ignores_ci_when_disabled():
+    assert gates.blocker({"isDraft": False, "statusCheckRollup": [{"conclusion": "FAILURE"}]}, check_ci=False) is None
 
 
 LINES = {("app.py", 2)}

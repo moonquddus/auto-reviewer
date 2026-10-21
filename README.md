@@ -1,11 +1,11 @@
 # auto-reviewer
 
-Reviews GitHub PRs that are assigned to you, with Claude Code in headless mode (`claude -p`).
+Reviews GitHub PRs that request a review from you or your team, with Claude Code in headless mode (`claude -p`).
 
 - **accept**: approves the PR. No body, no comments.
 - **comment** / **needs_changes**: posts one review with inline code comments only.
 
-Draft PRs and PRs with failed CI are skipped. When CI is pending, the tool tries again on the next run. It does not review your own PRs, and it reviews each head commit one time only.
+It also reviews new commits on PRs that you reviewed before. It skips draft PRs and approved PRs. When `check_ci: true`, it skips PRs with failed CI, and waits for pending CI. It does not review your own PRs, and it reviews each head commit one time only.
 
 ## Requirements
 - macOS, [`uv`](https://docs.astral.sh/uv/), `gh` (logged in), `claude` (logged in)

@@ -3,6 +3,9 @@
 # true: log the review that would be posted, post nothing.
 dry_run: true
 
+# true: skip PRs with failed CI, and wait for pending CI.
+check_ci: true
+
 # Only review PRs by these authors. Leave both empty to review PRs by any author.
 allow:
   authors: []          # e.g. [alice, bob]

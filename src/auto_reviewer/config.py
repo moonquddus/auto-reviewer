@@ -18,6 +18,7 @@ class ClaudeConfig:
 @dataclass(frozen=True)
 class Config:
     dry_run: bool = True
+    check_ci: bool = True
     authors: list[str] = field(default_factory=list)
     teams: list[str] = field(default_factory=list)
     max_diff_bytes: int = 200_000
@@ -39,6 +40,7 @@ def load(path: Path = ROOT / "config.yaml") -> Config:
     allow = raw.get("allow", {}) or {}
     return Config(
         dry_run=raw.get("dry_run", True),
+        check_ci=raw.get("check_ci", True),
         authors=allow.get("authors", []) or [],
         teams=allow.get("teams", []) or [],
         max_diff_bytes=raw.get("max_diff_bytes", 200_000),
