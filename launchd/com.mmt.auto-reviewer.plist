@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.moonquddus.auto-reviewer</string>
+  <string>com.mmt.auto-reviewer</string>
   <key>ProgramArguments</key>
   <array>
     <string>__UV__</string>

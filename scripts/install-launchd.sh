@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-label=com.moonquddus.auto-reviewer
+label=com.mmt.auto-reviewer
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 target="$HOME/Library/LaunchAgents/$label.plist"
 path="$(dirname "$(command -v claude)"):$(dirname "$(command -v gh)"):$(dirname "$(command -v uv)"):/usr/bin:/bin:/usr/sbin:/sbin"

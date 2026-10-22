@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-label=com.moonquddus.auto-reviewer
+label=com.mmt.auto-reviewer
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 logs=("$HOME/Library/Logs/auto-reviewer.log" "$HOME/Library/Logs/auto-reviewer.launchd.log")
 

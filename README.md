@@ -49,7 +49,7 @@ To keep it running when no terminal is open:
 ```bash
 scripts/install-launchd.sh
 ```
-To stop: `launchctl bootout gui/$(id -u)/com.moonquddus.auto-reviewer`
+To stop: `launchctl bootout gui/$(id -u)/com.mmt.auto-reviewer`
 
 `scripts/watch.sh` uses the same launchd job. When you stop `watch.sh`, it also stops the background runner.
 
