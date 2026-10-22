@@ -15,8 +15,6 @@ log = logging.getLogger("auto-reviewer")
 
 
 def allowed(cfg: config.Config, author: str) -> bool:
-    if not cfg.authors and not cfg.teams:
-        return True
     return author in cfg.authors or any(author in github.team_members(t) for t in cfg.teams)
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from auto_reviewer import actions, gates
+from auto_reviewer import actions, config, gates
 from auto_reviewer.diff import commentable_lines
 from auto_reviewer.reviewer import Comment, Review, ReviewError, earlier_threads, parse
 from auto_reviewer.state import Seen
@@ -128,6 +128,20 @@ def test_seen_persists(tmp_path: Path):
     Seen(path).add(key)
     assert key in Seen(path)
     assert Seen.key("o/r", 1, "def") not in Seen(path)
+
+
+@pytest.mark.parametrize("allow", ["", "allow:\n", "allow:\n  authors: []\n  teams: []\n"])
+def test_load_rejects_empty_allow(tmp_path: Path, allow):
+    path = tmp_path / "config.yaml"
+    path.write_text(allow)
+    with pytest.raises(config.ConfigError):
+        config.load(path)
+
+
+def test_load_accepts_authors_only(tmp_path: Path):
+    path = tmp_path / "config.yaml"
+    path.write_text("allow:\n  authors: [alice]\n")
+    assert config.load(path).authors == ["alice"]
 
 
 def test_tail_reads_only_new_lines_and_handles_truncation(tmp_path):

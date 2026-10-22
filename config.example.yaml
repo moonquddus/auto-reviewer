@@ -6,7 +6,7 @@ dry_run: true
 # true: skip PRs with failed CI, and wait for pending CI.
 check_ci: true
 
-# Only review PRs by these authors. Leave both empty to review PRs by any author.
+# Only review PRs by these authors. Set at least one of the two.
 allow:
   authors: []          # e.g. [alice, bob]
   teams: []            # e.g. [my-org/backend]

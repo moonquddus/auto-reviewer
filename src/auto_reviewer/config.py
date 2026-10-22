@@ -35,9 +35,15 @@ def _resolve(path: str) -> Path:
     return p if p.is_absolute() else ROOT / p
 
 
+class ConfigError(Exception):
+    pass
+
+
 def load(path: Path = ROOT / "config.yaml") -> Config:
     raw = yaml.safe_load(path.read_text()) or {}
     allow = raw.get("allow", {}) or {}
+    if not allow.get("authors") and not allow.get("teams"):
+        raise ConfigError(f"{path}: set allow.authors or allow.teams, or both")
     return Config(
         dry_run=raw.get("dry_run", True),
         check_ci=raw.get("check_ci", True),
