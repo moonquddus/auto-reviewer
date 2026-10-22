@@ -24,8 +24,11 @@ def keys(*texts: str) -> list[str]:
 
 @cache
 def _token(service: str) -> str:
-    return subprocess.run(["security", "find-generic-password", "-s", service, "-w"],
-                          capture_output=True, text=True, check=True).stdout.strip()
+    token = subprocess.run(["security", "find-generic-password", "-s", service, "-w"],
+                           capture_output=True, text=True, check=True).stdout.strip()
+    if not token:
+        raise JiraError(f"Keychain item {service} is empty")
+    return token
 
 
 def _get(cfg: JiraConfig, key: str) -> dict | None:
