@@ -7,7 +7,7 @@ from auto_reviewer import actions, config, gates, jira
 from auto_reviewer.diff import commentable_lines
 from auto_reviewer.reviewer import Comment, Review, ReviewError, build_prompt, earlier_threads, parse
 from auto_reviewer.state import Seen
-from auto_reviewer.watch import Tail, wrap
+from auto_reviewer.watch import Posted, Tail, posted, table, wrap
 
 DIFF = """diff --git a/app.py b/app.py
 index 111..222 100644
@@ -170,6 +170,29 @@ def test_tail_reads_only_new_lines_and_handles_truncation(tmp_path):
     log_file.write_text("new\n")
     tail.poll()
     assert list(tail.lines)[-1] == "new"
+
+
+def test_tail_from_start_reads_existing_lines(tmp_path):
+    log_file = tmp_path / "a.log"
+    log_file.write_text("old\n")
+    tail = Tail(log_file, from_start=True)
+    assert tail.poll()
+    assert list(tail.lines) == ["old"]
+
+
+def test_posted():
+    assert posted("2026-10-22 11:03:51,529 INFO https://x/pull/1: posted APPROVE with 2 comments, author ann") == \
+        Posted("22 Oct 11:03", "ann", "https://x/pull/1", "Approved", "2")
+    assert posted("2026-10-21 14:15:59,770 INFO https://x/pull/2: posted COMMENT with 0 comments") == \
+        Posted("21 Oct 14:15", "-", "https://x/pull/2", "Commented", "0")
+    assert posted("2026-10-22 04:04:39,525 ERROR https://x/pull/3: failed") is None
+
+
+def test_table_shrinks_link_to_fit():
+    rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
+    lines = table(rows, 50)
+    assert lines[0].split() == ["Time", "Author", "PR", "Status", "Comments"]
+    assert all(len(line) <= 50 for line in lines)
 
 
 def test_wrap():

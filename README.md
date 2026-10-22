@@ -42,7 +42,7 @@ If it cannot find or read a ticket, it reviews without it, and adds a note to th
 ```bash
 scripts/watch.sh
 ```
-It reviews PRs every `poll_seconds` (default: 120). It opens a full-screen view with two panes: the review log on the left, and the launchd error log on the right. Press `q` (or Ctrl-C) to stop.
+It reviews PRs every `poll_seconds` (default: 120). It opens a full-screen view with two panes: a table of posted reviews on the left (60%), and the launchd error log on the right (40%). Press `q` (or Ctrl-C) to stop.
 
 ## Run in the background
 To keep it running when no terminal is open:

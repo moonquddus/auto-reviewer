@@ -53,7 +53,8 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> 
         log.info("%s: dry run %s", pr.url, json.dumps(body))
     else:
         github.post_review(pr, body)
-        log.info("%s: posted %s with %d comments", pr.url, body["event"], len(body.get("comments", [])))
+        log.info("%s: posted %s with %d comments, author %s",
+                 pr.url, body["event"], len(body.get("comments", [])), pr.author)
     seen.add(key)
 
 
