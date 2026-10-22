@@ -37,6 +37,11 @@ scripts/install-launchd.sh
 ```
 To stop: `launchctl bootout gui/$(id -u)/com.moonquddus.auto-reviewer`
 
+To run it only while you watch the logs:
+```bash
+scripts/watch.sh   # press q (or Ctrl-C) to stop
+```
+
 ## Tests
 ```bash
 uv run pytest
