@@ -8,7 +8,7 @@ from pathlib import Path
 
 HISTORY = 1000
 TITLE = "Auto Reviewer"
-FOOTER = "Press q to exit"
+FOOTER = "Press c to clear, d to toggle logs, q to exit"
 POSTED = re.compile(r"^(\S+ \d\d:\d\d)\S* INFO (\S+): posted (\w+) with (\d+) comments(?:, author (\S+))?$")
 STATUS = {"APPROVE": "Approved", "REQUEST_CHANGES": "Changes requested", "COMMENT": "Commented"}
 HEADERS = ("Time", "Author", "PR", "Status", "Comments")
@@ -97,7 +97,7 @@ def draw_log(win: curses.window, tail: Tail) -> None:
     win.noutrefresh()
 
 
-def draw(stdscr: curses.window, reviews: Tail, errors: Tail) -> None:
+def draw(stdscr: curses.window, reviews: Tail, errors: Tail, show_log: bool) -> None:
     stdscr.erase()
     h, w = stdscr.getmaxyx()
     if h < 5 or w < 20:
@@ -107,24 +107,32 @@ def draw(stdscr: curses.window, reviews: Tail, errors: Tail) -> None:
     stdscr.addnstr(0, max(0, (w - len(TITLE)) // 2), TITLE, w, curses.A_BOLD | curses.A_REVERSE)
     stdscr.addnstr(h - 1, max(0, (w - len(FOOTER)) // 2), FOOTER, w - 1, curses.A_DIM)
     stdscr.noutrefresh()
-    left = w * 3 // 5
+    left = w * 3 // 5 if show_log else w
     draw_table(stdscr.derwin(h - 2, left, 1, 0), reviews)
-    draw_log(stdscr.derwin(h - 2, w - left, 1, left), errors)
+    if show_log:
+        draw_log(stdscr.derwin(h - 2, w - left, 1, left), errors)
     curses.doupdate()
 
 
 def run(stdscr: curses.window, reviews: Tail, errors: Tail) -> None:
     curses.curs_set(0)
     stdscr.timeout(200)
-    dirty = True
+    dirty = show_log = True
     while True:
         dirty = any([reviews.poll(), errors.poll()]) or dirty
         if dirty:
-            draw(stdscr, reviews, errors)
+            draw(stdscr, reviews, errors, show_log)
             dirty = False
         key = stdscr.getch()
         if key in (ord("q"), ord("Q")):
             return
+        if key in (ord("c"), ord("C")):
+            reviews.lines.clear()
+            errors.lines.clear()
+            dirty = True
+        if key in (ord("d"), ord("D")):
+            show_log = not show_log
+            dirty = True
         if key == curses.KEY_RESIZE:
             dirty = True
 
