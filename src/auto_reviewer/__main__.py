@@ -43,7 +43,8 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> 
         seen.add(key)
         return
 
-    body = actions.payload(result, info["headRefOid"])
+    note = jira.NOT_READ if cfg.jira.base_url and not tickets else ""
+    body = actions.payload(result, info["headRefOid"], note)
     if cfg.dry_run:
         log.info("%s: dry run %s", pr.url, json.dumps(body))
     else:

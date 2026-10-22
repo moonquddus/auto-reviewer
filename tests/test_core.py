@@ -58,6 +58,11 @@ def test_accept_without_comments_approves_empty():
     assert actions.payload(result, "sha") == {"commit_id": "sha", "event": "APPROVE"}
 
 
+def test_payload_adds_note_as_review_body():
+    result = actions.settle(Review("accept", []), LINES)
+    assert actions.payload(result, "sha", "n") == {"commit_id": "sha", "event": "APPROVE", "body": "n"}
+
+
 def test_accept_with_comments_approves_with_comments():
     result = actions.settle(Review("accept", [Comment("app.py", 2, "hm")]), LINES)
     assert actions.payload(result, "sha") == {

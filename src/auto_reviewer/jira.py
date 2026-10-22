@@ -11,6 +11,7 @@ from auto_reviewer.config import JiraConfig
 KEY = re.compile(r"\b[A-Z][A-Z0-9]+-\d+\b")
 MAX_TICKETS = 3
 MAX_COMMENTS = 10
+NOT_READ = "**note (non-blocking):** I could not review the intent, because I could not read the Jira ticket for this PR."
 
 
 class JiraError(Exception):

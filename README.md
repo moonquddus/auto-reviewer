@@ -28,7 +28,7 @@ When the PR title, branch or description has a Jira key (for example `ABC-123`),
 ```bash
 security add-generic-password -a "$USER" -s auto-reviewer-jira-token -w <token>
 ```
-If it cannot get a ticket, it logs a warning and reviews without it.
+If it cannot find or read a ticket, it reviews without it, and adds a note to the review that it could not review the intent.
 
 ## Claude account
 - `claude.auth: login`: uses your current `claude` login.
