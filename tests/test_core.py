@@ -142,6 +142,7 @@ def test_load_accepts_authors_only(tmp_path: Path):
     path = tmp_path / "config.yaml"
     path.write_text("allow:\n  authors: [alice]\n")
     assert config.load(path).authors == ["alice"]
+    assert config.load(path).poll_seconds == 120
 
 
 def test_tail_reads_only_new_lines_and_handles_truncation(tmp_path):

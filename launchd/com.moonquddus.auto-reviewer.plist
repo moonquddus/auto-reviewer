@@ -22,7 +22,7 @@
     <string>__PATH__</string>
   </dict>
   <key>StartInterval</key>
-  <integer>120</integer>
+  <integer>__INTERVAL__</integer>
   <key>RunAtLoad</key>
   <true/>
   <key>StandardErrorPath</key>
