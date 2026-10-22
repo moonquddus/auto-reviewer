@@ -63,6 +63,10 @@ def test_payload_adds_note_as_review_body():
     assert actions.payload(result, "sha", "n") == {"commit_id": "sha", "event": "APPROVE", "body": "n"}
 
 
+def test_note_without_review_is_a_comment():
+    assert actions.payload(None, "sha", "n") == {"commit_id": "sha", "event": "COMMENT", "body": "n"}
+
+
 def test_accept_with_comments_approves_with_comments():
     result = actions.settle(Review("accept", [Comment("app.py", 2, "hm")]), LINES)
     assert actions.payload(result, "sha") == {
@@ -197,3 +201,35 @@ def test_prompt_puts_tickets_before_diff():
     prompt = build_prompt("t", "b", "d", tickets="ABC-1")
     assert prompt.index("<jira_tickets>") < prompt.index("<diff>")
     assert "<jira_tickets>" not in build_prompt("t", "b", "d")
+
+
+@pytest.fixture
+def run_process(monkeypatch, tmp_path):
+    from auto_reviewer import __main__ as main, github, jira
+
+    def run(earlier_reviews, verdict):
+        posted = []
+        monkeypatch.setattr(github, "details", lambda pr: {"headRefOid": "sha", "headRefName": "x", "isDraft": False})
+        monkeypatch.setattr(github, "diff", lambda pr: DIFF)
+        monkeypatch.setattr(github, "review_comments", lambda pr: [])
+        monkeypatch.setattr(github, "reviews", lambda pr: earlier_reviews)
+        monkeypatch.setattr(github, "post_review", lambda pr, body: posted.append(body))
+        monkeypatch.setattr(jira, "tickets", lambda *a: "")
+        monkeypatch.setattr(main, "review", lambda *a: Review(verdict, []))
+        cfg = config.Config(dry_run=False, check_ci=False, jira=config.JiraConfig(base_url="https://x"))
+        pr = github.PullRequest("o/r", 1, "t", "a", "u")
+        state = tmp_path / "state.json"
+        state.unlink(missing_ok=True)
+        main.process(cfg, Seen(state), pr, "me")
+        return posted
+
+    return run
+
+
+def test_note_posted_alone_when_review_has_nothing_new(run_process):
+    assert run_process([], "needs_changes") == [{"commit_id": "sha", "event": "COMMENT", "body": jira.NOT_READ}]
+
+
+def test_note_not_repeated(run_process):
+    assert run_process([{"user": "me", "body": jira.NOT_READ}], "accept") == [{"commit_id": "sha", "event": "APPROVE"}]
+    assert run_process([{"user": "me", "body": jira.NOT_READ}], "needs_changes") == []

@@ -55,6 +55,12 @@ def review_comments(pr: PullRequest) -> list[dict]:
     return [json.loads(row) for row in out.splitlines() if row]
 
 
+def reviews(pr: PullRequest) -> list[dict]:
+    out = _gh("api", "--paginate", f"repos/{pr.repo}/pulls/{pr.number}/reviews", "--jq",
+              ".[] | {user: .user.login, body}")
+    return [json.loads(row) for row in out.splitlines() if row]
+
+
 def post_review(pr: PullRequest, payload: dict) -> None:
     _gh("api", "--method", "POST", f"repos/{pr.repo}/pulls/{pr.number}/reviews", "--input", "-",
         stdin=json.dumps(payload))

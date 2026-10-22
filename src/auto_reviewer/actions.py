@@ -16,10 +16,11 @@ def settle(review: Review, commentable: set[tuple[str, int]], earlier: list[dict
     return Review(review.verdict, comments)
 
 
-def payload(review: Review, sha: str, note: str = "") -> dict:
-    body = {"commit_id": sha, "event": EVENTS[review.verdict]}
+def payload(review: Review | None, sha: str, note: str = "") -> dict:
+    # No review means nothing new to say, so post the note alone without changing the verdict.
+    body = {"commit_id": sha, "event": EVENTS[review.verdict] if review else "COMMENT"}
     if note:
         body["body"] = note
-    if review.comments:
+    if review and review.comments:
         body["comments"] = [{"path": c.path, "line": c.line, "side": "RIGHT", "body": c.body} for c in review.comments]
     return body

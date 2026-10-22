@@ -18,6 +18,10 @@ def allowed(cfg: config.Config, author: str) -> bool:
     return author in cfg.authors or any(author in github.team_members(t) for t in cfg.teams)
 
 
+def noted(pr: github.PullRequest, me: str) -> bool:
+    return any(r["user"] == me and jira.NOT_READ in r["body"] for r in github.reviews(pr))
+
+
 def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> None:
     info = github.details(pr)
     key = Seen.key(pr.repo, pr.number, info["headRefOid"])
@@ -38,18 +42,18 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> 
         tickets = ""
     prompt = build_prompt(pr.title, description, diff[: cfg.max_diff_bytes], earlier_threads(comments, me), tickets)
     result = actions.settle(review(cfg.claude, cfg.guide_for(pr.repo), prompt), commentable_lines(diff), mine)
-    if result is None:
+    note = jira.NOT_READ if cfg.jira.base_url and not tickets and not noted(pr, me) else ""
+    if result is None and not note:
         log.info("%s: no new valid inline comments, nothing posted", pr.url)
         seen.add(key)
         return
 
-    note = jira.NOT_READ if cfg.jira.base_url and not tickets else ""
     body = actions.payload(result, info["headRefOid"], note)
     if cfg.dry_run:
         log.info("%s: dry run %s", pr.url, json.dumps(body))
     else:
         github.post_review(pr, body)
-        log.info("%s: posted %s with %d comments", pr.url, body["event"], len(result.comments))
+        log.info("%s: posted %s with %d comments", pr.url, body["event"], len(body.get("comments", [])))
     seen.add(key)
 
 
