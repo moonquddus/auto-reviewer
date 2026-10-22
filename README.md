@@ -31,16 +31,20 @@ Edit `review-guide.md`. Claude gets it as the system prompt. To use a different 
   security add-generic-password -a "$USER" -s auto-reviewer-claude-token -w <token>
   ```
 
-## Run every 2 minutes
+## Run
+```bash
+scripts/watch.sh
+```
+It reviews PRs every 2 minutes and shows the logs. Press `q` (or Ctrl-C) to stop.
+
+## Run in the background
+To keep it running when no terminal is open:
 ```bash
 scripts/install-launchd.sh
 ```
 To stop: `launchctl bootout gui/$(id -u)/com.moonquddus.auto-reviewer`
 
-To run it only while you watch the logs:
-```bash
-scripts/watch.sh   # press q (or Ctrl-C) to stop
-```
+`scripts/watch.sh` uses the same launchd job. When you stop `watch.sh`, it also stops the background runner.
 
 ## Tests
 ```bash
