@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from auto_reviewer import actions, config, gates
+from auto_reviewer import actions, config, gates, jira
 from auto_reviewer.diff import commentable_lines
-from auto_reviewer.reviewer import Comment, Review, ReviewError, earlier_threads, parse
+from auto_reviewer.reviewer import Comment, Review, ReviewError, build_prompt, earlier_threads, parse
 from auto_reviewer.state import Seen
 from auto_reviewer.watch import Tail, wrap
 
@@ -166,3 +166,29 @@ def test_tail_reads_only_new_lines_and_handles_truncation(tmp_path):
 def test_wrap():
     assert wrap("abcdef", 4) == ["abcd", "ef"]
     assert wrap("", 4) == [""]
+
+
+def test_jira_keys():
+    assert jira.keys("ABC-123: Add login", "ABC-123-add-login", "https://x.atlassian.net/browse/ABC-45 utf-8") == ["ABC-123", "ABC-45"]
+
+
+def test_jira_render():
+    issue = {"key": "ABC-1", "fields": {
+        "summary": "Add a login page", "issuetype": {"name": "Story"}, "status": {"name": "To Do"},
+        "description": "Users sign in with email", "parent": {"key": "ABC-0", "fields": {"summary": "Epic"}},
+        "comment": {"comments": [{"author": {"displayName": "Ann"}, "body": "Keep the old page"}]},
+    }}
+    assert jira.render(issue) == (
+        "ABC-1 (Story, To Do): Add a login page\nParent: ABC-0: Epic\n\nUsers sign in with email"
+        "\n\nComment from Ann:\nKeep the old page"
+    )
+
+
+def test_jira_off_without_base_url():
+    assert jira.tickets(config.JiraConfig(), "ABC-1") == ""
+
+
+def test_prompt_puts_tickets_before_diff():
+    prompt = build_prompt("t", "b", "d", tickets="ABC-1")
+    assert prompt.index("<jira_tickets>") < prompt.index("<diff>")
+    assert "<jira_tickets>" not in build_prompt("t", "b", "d")

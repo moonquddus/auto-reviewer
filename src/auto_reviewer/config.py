@@ -16,6 +16,13 @@ class ClaudeConfig:
 
 
 @dataclass(frozen=True)
+class JiraConfig:
+    base_url: str = ""
+    email: str = ""
+    token_keychain_service: str = "auto-reviewer-jira-token"
+
+
+@dataclass(frozen=True)
 class Config:
     dry_run: bool = True
     check_ci: bool = True
@@ -26,6 +33,7 @@ class Config:
     review_guide: Path = ROOT / "review-guide.md"
     repo_guides: dict[str, Path] = field(default_factory=dict)
     claude: ClaudeConfig = field(default_factory=ClaudeConfig)
+    jira: JiraConfig = field(default_factory=JiraConfig)
 
     def guide_for(self, repo: str) -> str:
         return self.repo_guides.get(repo, self.review_guide).read_text()
@@ -55,4 +63,5 @@ def load(path: Path = ROOT / "config.yaml") -> Config:
         review_guide=_resolve(raw.get("review_guide", "review-guide.md")),
         repo_guides={repo: _resolve(p) for repo, p in (raw.get("repo_guides") or {}).items()},
         claude=ClaudeConfig(**(raw.get("claude") or {})),
+        jira=JiraConfig(**(raw.get("jira") or {})),
     )

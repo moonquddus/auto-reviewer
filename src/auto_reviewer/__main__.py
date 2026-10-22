@@ -5,7 +5,7 @@ import subprocess
 from dataclasses import replace
 from pathlib import Path
 
-from auto_reviewer import actions, config, gates, github
+from auto_reviewer import actions, config, gates, github, jira
 from auto_reviewer.diff import commentable_lines
 from auto_reviewer.reviewer import ReviewError, build_prompt, earlier_threads, review
 from auto_reviewer.state import DRY_RUN_STATE, STATE, Seen
@@ -30,7 +30,13 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> 
     diff = github.diff(pr)
     comments = github.review_comments(pr)
     mine = [c for c in comments if c["user"] == me]
-    prompt = build_prompt(pr.title, info.get("body") or "", diff[: cfg.max_diff_bytes], earlier_threads(comments, me))
+    description = info.get("body") or ""
+    try:
+        tickets = jira.tickets(cfg.jira, pr.title, info["headRefName"], description)
+    except (jira.JiraError, subprocess.SubprocessError) as e:
+        log.warning("%s: no Jira context, %s", pr.url, e)
+        tickets = ""
+    prompt = build_prompt(pr.title, description, diff[: cfg.max_diff_bytes], earlier_threads(comments, me), tickets)
     result = actions.settle(review(cfg.claude, cfg.guide_for(pr.repo), prompt), commentable_lines(diff), mine)
     if result is None:
         log.info("%s: no new valid inline comments, nothing posted", pr.url)

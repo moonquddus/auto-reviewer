@@ -42,7 +42,7 @@ def team_members(team: str) -> frozenset[str]:
 
 def details(pr: PullRequest) -> dict:
     return json.loads(_gh("pr", "view", str(pr.number), "--repo", pr.repo,
-                          "--json", "headRefOid,isDraft,statusCheckRollup,body,reviewDecision,latestReviews"))
+                          "--json", "headRefOid,headRefName,isDraft,statusCheckRollup,body,reviewDecision,latestReviews"))
 
 
 def diff(pr: PullRequest) -> str:

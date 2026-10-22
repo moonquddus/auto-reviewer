@@ -23,6 +23,13 @@ Look at the output in `~/Library/Logs/auto-reviewer.log`. When it is correct, se
 ## How Claude reviews
 Edit `review-guide.md`. Claude gets it as the system prompt. To use a different guide for a repo, add it to `repo_guides` in `config.yaml`.
 
+## Jira tickets
+When the PR title, branch or description has a Jira key (for example `ABC-123`), it gets the ticket and gives it to Claude. Claude then checks that the PR does what the ticket asks. To turn it on, set `jira` in `config.yaml`, and store an [API token](https://id.atlassian.com/manage-profile/security/api-tokens) in the Keychain:
+```bash
+security add-generic-password -a "$USER" -s auto-reviewer-jira-token -w <token>
+```
+If it cannot get a ticket, it logs a warning and reviews without it.
+
 ## Claude account
 - `claude.auth: login`: uses your current `claude` login.
 - `claude.auth: token`: uses a long-lived token from the Keychain, for example for an Enterprise account:

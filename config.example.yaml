@@ -28,3 +28,12 @@ claude:
   token_keychain_service: auto-reviewer-claude-token
   model: sonnet
   timeout_seconds: 600
+
+# Optional. Gives Claude the Jira tickets that a PR links to, so it can check the intent.
+# Leave base_url empty to turn it off. Store an API token from
+# https://id.atlassian.com/manage-profile/security/api-tokens in the macOS Keychain:
+#   security add-generic-password -a "$USER" -s auto-reviewer-jira-token -w <token>
+jira:
+  base_url: ""         # e.g. https://my-org.atlassian.net
+  email: ""            # your Atlassian account email
+  token_keychain_service: auto-reviewer-jira-token
