@@ -35,7 +35,7 @@ Edit `review-guide.md`. Claude gets it as the system prompt. To use a different 
 ```bash
 scripts/watch.sh
 ```
-It reviews PRs every 2 minutes and shows the logs. Press `q` (or Ctrl-C) to stop.
+It reviews PRs every 2 minutes. It opens a full-screen view with two panes: the review log on the left, and the launchd error log on the right. Press `q` (or Ctrl-C) to stop.
 
 ## Run in the background
 To keep it running when no terminal is open:

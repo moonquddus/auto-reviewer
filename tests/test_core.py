@@ -7,6 +7,7 @@ from auto_reviewer import actions, gates
 from auto_reviewer.diff import commentable_lines
 from auto_reviewer.reviewer import Comment, Review, ReviewError, earlier_threads, parse
 from auto_reviewer.state import Seen
+from auto_reviewer.watch import Tail, wrap
 
 DIFF = """diff --git a/app.py b/app.py
 index 111..222 100644
@@ -127,3 +128,26 @@ def test_seen_persists(tmp_path: Path):
     Seen(path).add(key)
     assert key in Seen(path)
     assert Seen.key("o/r", 1, "def") not in Seen(path)
+
+
+def test_tail_reads_only_new_lines_and_handles_truncation(tmp_path):
+    log_file = tmp_path / "a.log"
+    log_file.write_text("old\n")
+    tail = Tail(log_file)
+    assert not tail.poll()
+    with log_file.open("a") as f:
+        f.write("one\ntw")
+    assert tail.poll()
+    assert list(tail.lines) == ["one"]
+    with log_file.open("a") as f:
+        f.write("o\nthree\n")
+    tail.poll()
+    assert list(tail.lines) == ["one", "two", "three"]
+    log_file.write_text("new\n")
+    tail.poll()
+    assert list(tail.lines)[-1] == "new"
+
+
+def test_wrap():
+    assert wrap("abcdef", 4) == ["abcd", "ef"]
+    assert wrap("", 4) == [""]
