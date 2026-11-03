@@ -1,0 +1,21 @@
+id = "auto-reviewer"
+name = "Auto Reviewer"
+version = "0.1.0"
+min_herdr_version = "0.9.5"
+description = "Review GitHub PRs with Claude Code"
+platforms = ["macos"]
+
+[[build]]
+command = ["uv", "sync"]
+
+[[panes]]
+id = "watch"
+title = "Auto Reviewer"
+placement = "split"
+command = ["scripts/watch.sh"]
+
+[[actions]]
+id = "open"
+title = "Open Auto Reviewer"
+contexts = ["workspace"]
+command = ["sh", "-c", "exec \"$HERDR_BIN_PATH\" plugin pane open --plugin auto-reviewer --entrypoint watch"]

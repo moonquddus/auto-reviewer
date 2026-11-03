@@ -53,6 +53,20 @@ To stop: `launchctl bootout gui/$(id -u)/com.mmt.auto-reviewer`
 
 `scripts/watch.sh` uses the same launchd job. When you stop `watch.sh`, it also stops the background runner.
 
+## Run in herdr
+```bash
+herdr plugin link "$PWD"
+herdr plugin pane open --plugin auto-reviewer --entrypoint watch
+```
+It opens the watch view in a split pane. When you close the pane, it stops the runner. To open it with a key, add this to `~/.config/herdr/config.toml`:
+```toml
+[[keys.command]]
+key = "prefix+r"
+type = "plugin_action"
+command = "auto-reviewer.open"
+description = "open auto-reviewer"
+```
+
 ## Tests
 ```bash
 uv run pytest
