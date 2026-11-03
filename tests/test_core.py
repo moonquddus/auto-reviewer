@@ -154,6 +154,36 @@ def test_load_accepts_authors_only(tmp_path: Path):
     assert config.load(path).poll_seconds == 120
 
 
+def test_directory_prefers_env_dirs_with_a_config(tmp_path: Path, monkeypatch):
+    own, plugin = tmp_path / "own", tmp_path / "plugin"
+    own.mkdir()
+    plugin.mkdir()
+    (plugin / "config.yaml").write_text("")
+    monkeypatch.setenv("AUTO_REVIEWER_CONFIG_DIR", str(own))
+    monkeypatch.setenv("HERDR_PLUGIN_CONFIG_DIR", str(plugin))
+    assert config.directory() == plugin
+    (own / "config.yaml").write_text("")
+    assert config.directory() == own
+
+
+def test_directory_names_first_env_dir_when_no_config(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(config, "ROOT", tmp_path / "repo")
+    monkeypatch.delenv("AUTO_REVIEWER_CONFIG_DIR", raising=False)
+    monkeypatch.setenv("HERDR_PLUGIN_CONFIG_DIR", str(tmp_path))
+    assert config.directory() == tmp_path
+    with pytest.raises(config.ConfigError, match="Missing"):
+        config.load()
+
+
+def test_guides_resolve_from_config_dir_then_repo(tmp_path: Path):
+    (tmp_path / "mine.md").write_text("")
+    path = tmp_path / "config.yaml"
+    path.write_text("allow:\n  authors: [a]\nrepo_guides:\n  o/r: mine.md\n")
+    cfg = config.load(path)
+    assert cfg.repo_guides["o/r"] == tmp_path / "mine.md"
+    assert cfg.review_guide == config.ROOT / "review-guide.md"
+
+
 def test_tail_reads_only_new_lines_and_handles_truncation(tmp_path):
     log_file = tmp_path / "a.log"
     log_file.write_text("old\n")

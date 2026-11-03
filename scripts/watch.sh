@@ -6,7 +6,7 @@ repo="$(cd "$(dirname "$0")/.." && pwd)"
 logs=("$HOME/Library/Logs/auto-reviewer.log" "$HOME/Library/Logs/auto-reviewer.launchd.log")
 
 touch "${logs[@]}"
-"$repo/scripts/install-launchd.sh" >/dev/null
+"$repo/scripts/install-launchd.sh" >/dev/null || { read -rp "Press Enter to close."; exit 1; }
 
 stop() {
   launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true

@@ -62,7 +62,7 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="auto-reviewer")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--config", type=Path, default=config.ROOT / "config.yaml")
+    parser.add_argument("--config", type=Path)
     args = parser.parse_args()
 
     logging.basicConfig(

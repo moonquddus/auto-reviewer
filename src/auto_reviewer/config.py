@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -5,6 +6,7 @@ from typing import Literal
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+DIR_ENVS = ("AUTO_REVIEWER_CONFIG_DIR", "HERDR_PLUGIN_CONFIG_DIR")
 
 
 @dataclass(frozen=True)
@@ -39,16 +41,26 @@ class Config:
         return self.repo_guides.get(repo, self.review_guide).read_text()
 
 
-def _resolve(path: str) -> Path:
+def directory() -> Path:
+    dirs = [Path(d) for d in map(os.environ.get, DIR_ENVS) if d] + [ROOT]
+    return next((d for d in dirs if (d / "config.yaml").exists()), dirs[0])
+
+
+def _resolve(path: str, base: Path) -> Path:
     p = Path(path).expanduser()
-    return p if p.is_absolute() else ROOT / p
+    if p.is_absolute():
+        return p
+    return next((d / p for d in (base, ROOT) if (d / p).exists()), base / p)
 
 
 class ConfigError(Exception):
     pass
 
 
-def load(path: Path = ROOT / "config.yaml") -> Config:
+def load(path: Path | None = None) -> Config:
+    path = path or directory() / "config.yaml"
+    if not path.exists():
+        raise ConfigError(f"Missing {path}. Copy config.example.yaml there first.")
     raw = yaml.safe_load(path.read_text()) or {}
     allow = raw.get("allow", {}) or {}
     if not allow.get("authors") and not allow.get("teams"):
@@ -60,8 +72,8 @@ def load(path: Path = ROOT / "config.yaml") -> Config:
         authors=allow.get("authors", []) or [],
         teams=allow.get("teams", []) or [],
         max_diff_bytes=raw.get("max_diff_bytes", 200_000),
-        review_guide=_resolve(raw.get("review_guide", "review-guide.md")),
-        repo_guides={repo: _resolve(p) for repo, p in (raw.get("repo_guides") or {}).items()},
+        review_guide=_resolve(raw.get("review_guide", "review-guide.md"), path.parent),
+        repo_guides={repo: _resolve(p, path.parent) for repo, p in (raw.get("repo_guides") or {}).items()},
         claude=ClaudeConfig(**(raw.get("claude") or {})),
         jira=JiraConfig(**(raw.get("jira") or {})),
     )

@@ -55,9 +55,18 @@ To stop: `launchctl bootout gui/$(id -u)/com.mmt.auto-reviewer`
 `scripts/watch.sh` uses the same launchd job. When you stop `watch.sh`, it also stops the background runner.
 
 ## Run in herdr
-Do the [Setup](#setup) first. Then:
+Install the plugin from GitHub, and put your config in the herdr plugin config folder:
 ```bash
-herdr plugin link "$PWD"
+herdr plugin install moonquddus/auto-reviewer
+dir="$(herdr plugin config-dir auto-reviewer)"
+curl -fsSL https://raw.githubusercontent.com/moonquddus/auto-reviewer/main/config.example.yaml -o "$dir/config.yaml"
+```
+Edit `$dir/config.yaml`. Relative guide paths in it are relative to `$dir` first, then to the plugin. To update: `herdr plugin update auto-reviewer`. After an update, open the pane again, so that the runner uses the new version.
+
+To use a local clone instead, do the [Setup](#setup), then run `herdr plugin link "$PWD"`. It uses `config.yaml` in the clone, if `$dir/config.yaml` does not exist.
+
+Open the view:
+```bash
 herdr plugin pane open --plugin auto-reviewer --entrypoint watch
 ```
 It opens the watch view in a split pane. When you close the pane, it stops the runner. Ctrl-click a row to open its PR. The herdr sidebar shows the reviewer state, and herdr shows a notification for each posted review. To open it with a key, add this to `~/.config/herdr/config.toml`:

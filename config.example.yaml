@@ -16,7 +16,7 @@ allow:
 
 max_diff_bytes: 200000
 
-# How Claude must review. Paths are relative to this repo, or absolute.
+# How Claude must review. Paths are absolute, or relative to the folder of this file, then to the repo.
 review_guide: review-guide.md
 repo_guides: {}        # e.g. {my-org/api: guides/api.md}
 

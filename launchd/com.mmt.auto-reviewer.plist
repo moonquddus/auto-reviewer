@@ -20,6 +20,8 @@
   <dict>
     <key>PATH</key>
     <string>__PATH__</string>
+    <key>AUTO_REVIEWER_CONFIG_DIR</key>
+    <string>__CONFIG__</string>
   </dict>
   <key>StartInterval</key>
   <integer>__INTERVAL__</integer>
