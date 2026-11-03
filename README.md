@@ -11,6 +11,7 @@ It also reviews new commits on PRs that you reviewed before. It skips draft PRs 
 
 ## Requirements
 - macOS, [`uv`](https://docs.astral.sh/uv/), `gh` (logged in), `claude` (logged in)
+- Optional: [herdr](https://herdr.dev) 0.9.5 or later, to run it as a herdr plugin
 
 ## Setup
 ```bash
@@ -42,7 +43,7 @@ If it cannot find or read a ticket, it reviews without it, and adds a note to th
 ```bash
 scripts/watch.sh
 ```
-It reviews PRs every `poll_seconds` (default: 120). It opens a full-screen view with a table of posted reviews. Press `d` to show the launchd error log on the right (40%). Press `q` (or Ctrl-C) to stop.
+It reviews PRs every `poll_seconds` (default: 120). It opens a full-screen view with a table of posted reviews. A red status means that the newest review of that PR requested changes. Each row links to its PR, if your terminal supports links. Press `d` to show the launchd error log on the right (40%). Press `q` (or Ctrl-C) to stop.
 
 ## Run in the background
 To keep it running when no terminal is open:
@@ -54,11 +55,12 @@ To stop: `launchctl bootout gui/$(id -u)/com.mmt.auto-reviewer`
 `scripts/watch.sh` uses the same launchd job. When you stop `watch.sh`, it also stops the background runner.
 
 ## Run in herdr
+Do the [Setup](#setup) first. Then:
 ```bash
 herdr plugin link "$PWD"
 herdr plugin pane open --plugin auto-reviewer --entrypoint watch
 ```
-It opens the watch view in a split pane. When you close the pane, it stops the runner. Ctrl-click a row to open its PR. A red status means that the newest review of that PR requested changes. The herdr sidebar shows the reviewer state, and herdr shows a notification for each posted review. To open it with a key, add this to `~/.config/herdr/config.toml`:
+It opens the watch view in a split pane. When you close the pane, it stops the runner. Ctrl-click a row to open its PR. The herdr sidebar shows the reviewer state, and herdr shows a notification for each posted review. To open it with a key, add this to `~/.config/herdr/config.toml`:
 ```toml
 [[keys.command]]
 key = "prefix+r"
@@ -66,6 +68,7 @@ type = "plugin_action"
 command = "auto-reviewer.open"
 description = "open auto-reviewer"
 ```
+Then run `herdr server reload-config`.
 
 ## Tests
 ```bash
