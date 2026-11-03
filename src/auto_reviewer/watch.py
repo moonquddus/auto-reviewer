@@ -12,6 +12,7 @@ FOOTER = "Press c to clear, d to toggle logs, q to exit"
 POSTED = re.compile(r"^(\S+ \d\d:\d\d)\S* INFO (\S+): posted (\w+) with (\d+) comments(?:, author (\S+))?$")
 STATUS = {"APPROVE": "Approved", "REQUEST_CHANGES": "Changes requested", "COMMENT": "Commented"}
 HEADERS = ("Time", "Author", "PR", "Status", "Comments")
+PULL = re.compile(r"([^/]+)/pull/(\d+)$")
 
 
 class Tail:
@@ -56,10 +57,17 @@ def posted(line: str) -> Posted | None:
     return Posted(f"{when.day} {when:%b %H:%M}", author or "-", url, STATUS.get(event, event), comments)
 
 
+def short(url: str) -> str:
+    return f"{m[1]}#{m[2]}" if (m := PULL.search(url)) else url
+
+
 def table(rows: list[Posted], width: int) -> list[str]:
     cells = [HEADERS, *((r.time, r.author, r.url, r.status, r.comments) for r in rows)]
     widths = [max(map(len, col)) for col in zip(*cells)]
     link = HEADERS.index("PR")
+    if sum(widths) + 2 * (len(widths) - 1) > width:
+        cells[1:] = [(*c[:link], short(c[link]), *c[link + 1 :]) for c in cells[1:]]
+        widths = [max(map(len, col)) for col in zip(*cells)]
     widths[link] = max(len(HEADERS[link]), min(widths[link], width - sum(widths) + widths[link] - 2 * (len(widths) - 1)))
     lines = ["  ".join(c[:w].ljust(w) for c, w in zip(row, widths)) for row in cells]
     lines.insert(1, "  ".join("-" * w for w in widths))

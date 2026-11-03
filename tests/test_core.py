@@ -193,6 +193,12 @@ def test_table_shrinks_link_to_fit():
     lines = table(rows, 50)
     assert lines[0].split() == ["Time", "Author", "PR", "Status", "Comments"]
     assert all(len(line) <= 50 for line in lines)
+    assert "r#1" in lines[2]
+
+
+def test_table_keeps_full_link_when_it_fits():
+    rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
+    assert "https://github.com/o/r/pull/1" in table(rows, 120)[2]
 
 
 def test_wrap():
