@@ -143,14 +143,16 @@ def frame(win: curses.window, title: str) -> tuple[int, int]:
     return h - 2, w - 2
 
 
-def draw_table(win: curses.window, tail: Tail) -> str:
-    inner_h, inner_w = frame(win, "Reviews")
+def draw_table(win: curses.window, tail: Tail, boxed: bool) -> str:
+    h, w = win.getmaxyx()
+    # curses fails on a write to the bottom-right cell, so keep one free column without a box
+    (inner_h, inner_w), pad = (frame(win, "Reviews"), 1) if boxed else ((h, w - 1), 0)
     rows = [p for p in map(posted, reversed(tail.lines)) if p]
-    for y, line in enumerate(table(rows, inner_w)[:inner_h], start=1):
-        win.addnstr(y, 1, line, inner_w, curses.A_BOLD if y == 1 else curses.A_NORMAL)
+    for y, line in enumerate(table(rows, inner_w)[:inner_h]):
+        win.addnstr(y + pad, pad, line, inner_w, curses.A_BOLD if y == 0 else curses.A_NORMAL)
     win.noutrefresh()
     top, left = win.getbegyx()
-    return "".join(hyperlink(link, top + 1, left + 1) for link in links(rows, inner_w) if link.y < inner_h)
+    return "".join(hyperlink(link, top + pad, left + pad) for link in links(rows, inner_w) if link.y < inner_h)
 
 
 def draw_log(win: curses.window, tail: Tail) -> None:
@@ -178,7 +180,7 @@ def draw(stdscr: curses.window, reviews: Tail, errors: Tail, show_log: bool) -> 
     stdscr.addnstr(h - 1, max(0, (w - len(FOOTER)) // 2), FOOTER, w - 1, curses.A_DIM)
     stdscr.noutrefresh()
     left = w * 3 // 5 if show_log else w
-    escapes = draw_table(stdscr.derwin(h - 1 - top, left, top, 0), reviews)
+    escapes = draw_table(stdscr.derwin(h - 1 - top, left, top, 0), reviews, boxed=bool(top))
     if show_log:
         draw_log(stdscr.derwin(h - 1 - top, w - left, top, left), errors)
     curses.doupdate()
