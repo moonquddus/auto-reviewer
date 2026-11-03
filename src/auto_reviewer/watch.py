@@ -172,13 +172,15 @@ def draw(stdscr: curses.window, reviews: Tail, errors: Tail, show_log: bool) -> 
         stdscr.noutrefresh()
         curses.doupdate()
         return
-    stdscr.addnstr(0, max(0, (w - len(TITLE)) // 2), TITLE, w, curses.A_BOLD | curses.A_REVERSE)
+    top = 0 if herdr.enabled() else 1
+    if top:
+        stdscr.addnstr(0, max(0, (w - len(TITLE)) // 2), TITLE, w, curses.A_BOLD | curses.A_REVERSE)
     stdscr.addnstr(h - 1, max(0, (w - len(FOOTER)) // 2), FOOTER, w - 1, curses.A_DIM)
     stdscr.noutrefresh()
     left = w * 3 // 5 if show_log else w
-    escapes = draw_table(stdscr.derwin(h - 2, left, 1, 0), reviews)
+    escapes = draw_table(stdscr.derwin(h - 1 - top, left, top, 0), reviews)
     if show_log:
-        draw_log(stdscr.derwin(h - 2, w - left, 1, left), errors)
+        draw_log(stdscr.derwin(h - 1 - top, w - left, top, left), errors)
     curses.doupdate()
     # curses cannot write OSC 8 hyperlinks, so overwrite the PR cells after the update, then put the cursor back
     y, x = curses.getsyx()
