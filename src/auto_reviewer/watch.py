@@ -10,7 +10,7 @@ from auto_reviewer import herdr
 
 HISTORY = 1000
 TITLE = "Auto Reviewer"
-FOOTER = "Press c to clear, d to toggle logs, q to exit"
+FOOTER = "Ctrl-click a PR to open it. Press c to clear, d to toggle logs, q to exit"
 POSTED = re.compile(r"^(\S+ \d\d:\d\d)\S* INFO (\S+): posted (\w+) with (\d+) comments(?:, author (\S+))?$")
 STATUS = {"APPROVE": "Approved", "REQUEST_CHANGES": "Changes requested", "COMMENT": "Commented"}
 HEADERS = ("Time", "Author", "PR", "Status", "Comments")
@@ -189,7 +189,7 @@ def draw(stdscr: curses.window, reviews: Tail, errors: Tail, show_log: bool) -> 
 def run(stdscr: curses.window, reviews: Tail, errors: Tail) -> None:
     curses.curs_set(0)
     stdscr.timeout(200)
-    dirty = show_log = True
+    dirty, show_log = True, False
     reviews.poll()
     herdr.status("idle", "Auto Reviewer")
     while True:
