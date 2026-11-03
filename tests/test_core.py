@@ -201,6 +201,13 @@ def test_table_keeps_full_link_when_it_fits():
     assert "https://github.com/o/r/pull/1" in table(rows, 120)[2]
 
 
+def test_table_centers_status_and_comments():
+    rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
+    header, _, row = table(rows, 120)
+    assert header.endswith(" Status   Comments")
+    assert row.endswith("Approved     2    ")
+
+
 def test_links_point_at_pr_cells():
     rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
     for width in (50, 120):

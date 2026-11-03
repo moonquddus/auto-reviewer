@@ -15,6 +15,7 @@ POSTED = re.compile(r"^(\S+ \d\d:\d\d)\S* INFO (\S+): posted (\w+) with (\d+) co
 STATUS = {"APPROVE": "Approved", "REQUEST_CHANGES": "Changes requested", "COMMENT": "Commented"}
 HEADERS = ("Time", "Author", "PR", "Status", "Comments")
 LINK = HEADERS.index("PR")
+CENTERED = {"Status", "Comments"}
 PULL = re.compile(r"([^/]+)/pull/(\d+)$")
 EVENT = re.compile(r"^\S+ \S+ (INFO|ERROR) (\S+): (reviewing|posted|no new valid|dry run|)")
 
@@ -114,7 +115,8 @@ def layout(rows: list[Posted], width: int) -> tuple[list[tuple[str, ...]], list[
 
 def table(rows: list[Posted], width: int) -> list[str]:
     cells, widths = layout(rows, width)
-    lines = ["  ".join(c[:w].ljust(w) for c, w in zip(row, widths)) for row in cells]
+    align = [str.center if h in CENTERED else str.ljust for h in HEADERS]
+    lines = ["  ".join(a(c[:w], w) for a, c, w in zip(align, row, widths)) for row in cells]
     lines.insert(1, "  ".join("-" * w for w in widths))
     return lines
 
