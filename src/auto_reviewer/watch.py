@@ -12,6 +12,7 @@ FOOTER = "Press c to clear, d to toggle logs, q to exit"
 POSTED = re.compile(r"^(\S+ \d\d:\d\d)\S* INFO (\S+): posted (\w+) with (\d+) comments(?:, author (\S+))?$")
 STATUS = {"APPROVE": "Approved", "REQUEST_CHANGES": "Changes requested", "COMMENT": "Commented"}
 HEADERS = ("Time", "Author", "PR", "Status", "Comments")
+LINK = HEADERS.index("PR")
 PULL = re.compile(r"([^/]+)/pull/(\d+)$")
 
 
@@ -49,6 +50,14 @@ class Posted:
     comments: str
 
 
+@dataclass(frozen=True)
+class Link:
+    y: int
+    x: int
+    text: str
+    url: str
+
+
 def posted(line: str) -> Posted | None:
     if not (m := POSTED.search(line)):
         return None
@@ -61,17 +70,32 @@ def short(url: str) -> str:
     return f"{m[1]}#{m[2]}" if (m := PULL.search(url)) else url
 
 
-def table(rows: list[Posted], width: int) -> list[str]:
+def layout(rows: list[Posted], width: int) -> tuple[list[tuple[str, ...]], list[int]]:
     cells = [HEADERS, *((r.time, r.author, r.url, r.status, r.comments) for r in rows)]
     widths = [max(map(len, col)) for col in zip(*cells)]
-    link = HEADERS.index("PR")
     if sum(widths) + 2 * (len(widths) - 1) > width:
-        cells[1:] = [(*c[:link], short(c[link]), *c[link + 1 :]) for c in cells[1:]]
+        cells[1:] = [(*c[:LINK], short(c[LINK]), *c[LINK + 1 :]) for c in cells[1:]]
         widths = [max(map(len, col)) for col in zip(*cells)]
-    widths[link] = max(len(HEADERS[link]), min(widths[link], width - sum(widths) + widths[link] - 2 * (len(widths) - 1)))
+    widths[LINK] = max(len(HEADERS[LINK]), min(widths[LINK], width - sum(widths) + widths[LINK] - 2 * (len(widths) - 1)))
+    return cells, widths
+
+
+def table(rows: list[Posted], width: int) -> list[str]:
+    cells, widths = layout(rows, width)
     lines = ["  ".join(c[:w].ljust(w) for c, w in zip(row, widths)) for row in cells]
     lines.insert(1, "  ".join("-" * w for w in widths))
     return lines
+
+
+def links(rows: list[Posted], width: int) -> list[Link]:
+    cells, widths = layout(rows, width)
+    x = sum(widths[:LINK]) + 2 * LINK
+    shown = max(0, min(widths[LINK], width - x))
+    return [Link(y, x, c[LINK][:shown], r.url) for y, (c, r) in enumerate(zip(cells[1:], rows), start=2) if shown]
+
+
+def hyperlink(link: Link, top: int, left: int) -> str:
+    return f"\x1b[{top + link.y + 1};{left + link.x + 1}H\x1b]8;;{link.url}\x1b\\{link.text}\x1b]8;;\x1b\\"
 
 
 def wrap(line: str, width: int) -> list[str]:
@@ -85,12 +109,14 @@ def frame(win: curses.window, title: str) -> tuple[int, int]:
     return h - 2, w - 2
 
 
-def draw_table(win: curses.window, tail: Tail) -> None:
+def draw_table(win: curses.window, tail: Tail) -> str:
     inner_h, inner_w = frame(win, "Reviews")
     rows = [p for p in map(posted, reversed(tail.lines)) if p]
     for y, line in enumerate(table(rows, inner_w)[:inner_h], start=1):
         win.addnstr(y, 1, line, inner_w, curses.A_BOLD if y == 1 else curses.A_NORMAL)
     win.noutrefresh()
+    top, left = win.getbegyx()
+    return "".join(hyperlink(link, top + 1, left + 1) for link in links(rows, inner_w) if link.y < inner_h)
 
 
 def draw_log(win: curses.window, tail: Tail) -> None:
@@ -116,10 +142,14 @@ def draw(stdscr: curses.window, reviews: Tail, errors: Tail, show_log: bool) -> 
     stdscr.addnstr(h - 1, max(0, (w - len(FOOTER)) // 2), FOOTER, w - 1, curses.A_DIM)
     stdscr.noutrefresh()
     left = w * 3 // 5 if show_log else w
-    draw_table(stdscr.derwin(h - 2, left, 1, 0), reviews)
+    escapes = draw_table(stdscr.derwin(h - 2, left, 1, 0), reviews)
     if show_log:
         draw_log(stdscr.derwin(h - 2, w - left, 1, left), errors)
     curses.doupdate()
+    # curses cannot write OSC 8 hyperlinks, so overwrite the PR cells after the update, then put the cursor back
+    y, x = curses.getsyx()
+    sys.stdout.write(f"{escapes}\x1b[{y + 1};{x + 1}H")
+    sys.stdout.flush()
 
 
 def run(stdscr: curses.window, reviews: Tail, errors: Tail) -> None:

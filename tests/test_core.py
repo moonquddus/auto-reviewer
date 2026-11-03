@@ -7,7 +7,7 @@ from auto_reviewer import actions, config, gates, jira
 from auto_reviewer.diff import commentable_lines
 from auto_reviewer.reviewer import Comment, Review, ReviewError, build_prompt, earlier_threads, parse
 from auto_reviewer.state import Seen
-from auto_reviewer.watch import Posted, Tail, posted, table, wrap
+from auto_reviewer.watch import Link, Posted, Tail, hyperlink, links, posted, table, wrap
 
 DIFF = """diff --git a/app.py b/app.py
 index 111..222 100644
@@ -199,6 +199,19 @@ def test_table_shrinks_link_to_fit():
 def test_table_keeps_full_link_when_it_fits():
     rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
     assert "https://github.com/o/r/pull/1" in table(rows, 120)[2]
+
+
+def test_links_point_at_pr_cells():
+    rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
+    for width in (50, 120):
+        lines = table(rows, width)
+        [link] = links(rows, width)
+        assert link.url == rows[0].url
+        assert lines[link.y][link.x : link.x + len(link.text)] == link.text
+
+
+def test_hyperlink():
+    assert hyperlink(Link(2, 3, "r#1", "https://u"), 1, 1) == "\x1b[4;5H\x1b]8;;https://u\x1b\\r#1\x1b]8;;\x1b\\"
 
 
 def test_wrap():
