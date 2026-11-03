@@ -58,7 +58,7 @@ To stop: `launchctl bootout gui/$(id -u)/com.mmt.auto-reviewer`
 herdr plugin link "$PWD"
 herdr plugin pane open --plugin auto-reviewer --entrypoint watch
 ```
-It opens the watch view in a split pane. When you close the pane, it stops the runner. Ctrl-click a PR to open it. The herdr sidebar shows the reviewer state, and herdr shows a notification for each posted review. To open it with a key, add this to `~/.config/herdr/config.toml`:
+It opens the watch view in a split pane. When you close the pane, it stops the runner. Ctrl-click a row to open its PR. A red status means that the newest review of that PR requested changes. The herdr sidebar shows the reviewer state, and herdr shows a notification for each posted review. To open it with a key, add this to `~/.config/herdr/config.toml`:
 ```toml
 [[keys.command]]
 key = "prefix+r"

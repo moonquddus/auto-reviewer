@@ -7,7 +7,7 @@ from auto_reviewer import actions, config, gates, jira
 from auto_reviewer.diff import commentable_lines
 from auto_reviewer.reviewer import Comment, Review, ReviewError, build_prompt, earlier_threads, parse
 from auto_reviewer.state import Seen
-from auto_reviewer.watch import Event, Link, event, Posted, Tail, hyperlink, links, posted, table, wrap
+from auto_reviewer.watch import Event, Posted, Tail, event, flagged, linked_row, posted, table, wrap
 
 DIFF = """diff --git a/app.py b/app.py
 index 111..222 100644
@@ -193,32 +193,31 @@ def test_table_shrinks_link_to_fit():
     lines = table(rows, 50)
     assert lines[0].split() == ["Time", "Author", "PR", "Status", "Comments"]
     assert all(len(line) <= 50 for line in lines)
-    assert "r#1" in lines[2]
+    assert "r#1" in lines[1]
 
 
 def test_table_keeps_full_link_when_it_fits():
     rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
-    assert "https://github.com/o/r/pull/1" in table(rows, 120)[2]
+    assert "https://github.com/o/r/pull/1" in table(rows, 120)[1]
 
 
 def test_table_centers_status_and_comments():
     rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
-    header, _, row = table(rows, 120)
+    header, row = table(rows, 120)
     assert header.endswith(" Status   Comments")
     assert row.endswith("Approved     2    ")
 
 
-def test_links_point_at_pr_cells():
-    rows = [Posted("22 Oct 11:03", "ann", "https://github.com/o/r/pull/1", "Approved", "2")]
-    for width in (50, 120):
-        lines = table(rows, width)
-        [link] = links(rows, width)
-        assert link.url == rows[0].url
-        assert lines[link.y][link.x : link.x + len(link.text)] == link.text
+def test_flagged_marks_latest_review_with_changes_requested():
+    def row(url, status):
+        return Posted("22 Oct 11:03", "ann", url, status, "0")
+    rows = [row("a", "Approved"), row("b", "Changes requested"), row("a", "Changes requested"), row("b", "Approved")]
+    assert flagged(rows) == {1}
 
 
-def test_hyperlink():
-    assert hyperlink(Link(2, 3, "r#1", "https://u"), 1, 1) == "\x1b[4;5H\x1b]8;;https://u\x1b\\r#1\x1b]8;;\x1b\\"
+def test_linked_row():
+    assert linked_row(3, 4, "ab", "https://u", None, "") == "\x1b[4;5H\x1b]8;;https://u\x1b\\ab\x1b]8;;\x1b\\"
+    assert linked_row(0, 0, "abcd", "u", (1, 3), "<s>") == "\x1b[1;1H\x1b]8;;u\x1b\\a<s>bc\x1b[0md\x1b]8;;\x1b\\"
 
 
 def test_event():
