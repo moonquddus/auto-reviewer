@@ -31,6 +31,7 @@ def process(cfg: config.Config, seen: Seen, pr: github.PullRequest, me: str) -> 
         log.debug("%s: skipped, %s", pr.url, reason)
         return
 
+    log.info("%s: reviewing", pr.url)
     diff = github.diff(pr)
     comments = github.review_comments(pr)
     mine = [c for c in comments if c["user"] == me]

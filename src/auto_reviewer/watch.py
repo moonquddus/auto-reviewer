@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from auto_reviewer import herdr
+
 HISTORY = 1000
 TITLE = "Auto Reviewer"
 FOOTER = "Press c to clear, d to toggle logs, q to exit"
@@ -14,6 +16,7 @@ STATUS = {"APPROVE": "Approved", "REQUEST_CHANGES": "Changes requested", "COMMEN
 HEADERS = ("Time", "Author", "PR", "Status", "Comments")
 LINK = HEADERS.index("PR")
 PULL = re.compile(r"([^/]+)/pull/(\d+)$")
+EVENT = re.compile(r"^\S+ \S+ (INFO|ERROR) (\S+): (reviewing|posted|no new valid|dry run|)")
 
 
 class Tail:
@@ -23,22 +26,23 @@ class Tail:
         self.pos = path.stat().st_size if path.exists() and not from_start else 0
         self.partial = b""
 
-    def poll(self) -> bool:
+    def poll(self) -> list[str]:
         try:
             size = self.path.stat().st_size
         except FileNotFoundError:
-            return False
+            return []
         if size < self.pos:
             self.pos, self.partial = 0, b""
         if size == self.pos:
-            return False
+            return []
         with self.path.open("rb") as f:
             f.seek(self.pos)
             data = self.partial + f.read()
             self.pos = f.tell()
         *complete, self.partial = data.split(b"\n")
-        self.lines.extend(line.decode(errors="replace").expandtabs() for line in complete)
-        return bool(complete)
+        new = [line.decode(errors="replace").expandtabs() for line in complete]
+        self.lines.extend(new)
+        return new
 
 
 @dataclass(frozen=True)
@@ -68,6 +72,34 @@ def posted(line: str) -> Posted | None:
 
 def short(url: str) -> str:
     return f"{m[1]}#{m[2]}" if (m := PULL.search(url)) else url
+
+
+@dataclass(frozen=True)
+class Event:
+    state: str
+    text: str
+    toast: tuple[str, str] | None = None
+
+
+def event(line: str) -> Event | None:
+    if p := posted(line):
+        title = f"{p.status} {short(p.url)}"
+        return Event("idle", title, (title, f"{p.author}, {p.comments} comments"))
+    if not (m := EVENT.match(line)):
+        return None
+    level, url, kind = m.groups()
+    if level == "ERROR":
+        return Event("idle", f"Failed {short(url)}")
+    if kind == "reviewing":
+        return Event("working", f"Reviewing {short(url)}")
+    return Event("idle", f"Checked {short(url)}") if kind else None
+
+
+def report(lines: list[str]) -> None:
+    for e in filter(None, map(event, lines)):
+        herdr.status(e.state, e.text)
+        if e.toast:
+            herdr.notify(*e.toast)
 
 
 def layout(rows: list[Posted], width: int) -> tuple[list[tuple[str, ...]], list[int]]:
@@ -156,8 +188,12 @@ def run(stdscr: curses.window, reviews: Tail, errors: Tail) -> None:
     curses.curs_set(0)
     stdscr.timeout(200)
     dirty = show_log = True
+    reviews.poll()
+    herdr.status("idle", "Auto Reviewer")
     while True:
-        dirty = any([reviews.poll(), errors.poll()]) or dirty
+        new = reviews.poll()
+        report(new)
+        dirty = any([new, errors.poll()]) or dirty
         if dirty:
             draw(stdscr, reviews, errors, show_log)
             dirty = False
@@ -181,6 +217,8 @@ def main() -> None:
         curses.wrapper(run, Tail(Path(reviews_log), from_start=True), Tail(Path(errors_log)))
     except KeyboardInterrupt:
         pass
+    finally:
+        herdr.release()
 
 
 if __name__ == "__main__":

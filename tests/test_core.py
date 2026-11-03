@@ -7,7 +7,7 @@ from auto_reviewer import actions, config, gates, jira
 from auto_reviewer.diff import commentable_lines
 from auto_reviewer.reviewer import Comment, Review, ReviewError, build_prompt, earlier_threads, parse
 from auto_reviewer.state import Seen
-from auto_reviewer.watch import Link, Posted, Tail, hyperlink, links, posted, table, wrap
+from auto_reviewer.watch import Event, Link, event, Posted, Tail, hyperlink, links, posted, table, wrap
 
 DIFF = """diff --git a/app.py b/app.py
 index 111..222 100644
@@ -212,6 +212,16 @@ def test_links_point_at_pr_cells():
 
 def test_hyperlink():
     assert hyperlink(Link(2, 3, "r#1", "https://u"), 1, 1) == "\x1b[4;5H\x1b]8;;https://u\x1b\\r#1\x1b]8;;\x1b\\"
+
+
+def test_event():
+    assert event("2026-11-03 11:49:17,876 INFO https://github.com/o/r/pull/7: reviewing") == Event("working", "Reviewing r#7")
+    assert event("2026-11-03 11:49:17,876 INFO https://github.com/o/r/pull/7: posted APPROVE with 2 comments, author ann") == \
+        Event("idle", "Approved r#7", ("Approved r#7", "ann, 2 comments"))
+    assert event("2026-11-03 11:49:17,876 INFO https://github.com/o/r/pull/7: no new valid inline comments, nothing posted") == \
+        Event("idle", "Checked r#7")
+    assert event("2026-11-03 13:25:12,894 ERROR https://github.com/o/r/pull/7: Command failed") == Event("idle", "Failed r#7")
+    assert event("2026-11-03 13:25:12,894 WARNING https://github.com/o/r/pull/7: no Jira context, x") is None
 
 
 def test_wrap():
